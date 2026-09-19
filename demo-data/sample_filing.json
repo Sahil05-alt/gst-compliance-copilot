@@ -1,0 +1,16 @@
+{
+  "businessId": "BIZ001",
+  "period": "2026-08",
+  "filingType": "GSTR-1",
+  "invoices": [
+    { "invoiceNo": "INV-101", "gstin": "09AAACH7409R1ZZ", "taxableValue": 15000, "taxRate": 18, "hsnCode": "8471" },
+    { "invoiceNo": "INV-102", "gstin": "09AAACH7409R1ZZ", "taxableValue": 8200, "taxRate": 18, "hsnCode": "8471" },
+
+    { "invoiceNo": "INV-103", "gstin": "INVALIDGSTIN123", "taxableValue": 5000, "taxRate": 18, "hsnCode": "8517" },
+    { "invoiceNo": "INV-101", "gstin": "09AAACH7409R1ZZ", "taxableValue": 15000, "taxRate": 18, "hsnCode": "8471" },
+    { "invoiceNo": "INV-104", "gstin": "09AAACH7409R1ZZ", "taxableValue": 3000, "taxRate": 22, "hsnCode": "8517" },
+    { "invoiceNo": "INV-105", "gstin": "09AAACH7409R1ZZ", "taxableValue": -500, "taxRate": 18, "hsnCode": "84" },
+
+    { "invoiceNo": "INV-106", "gstin": "09AAACH7409R1ZZ", "taxableValue": 12000, "taxRate": 5, "hsnCode": "1006" }
+  ]
+}

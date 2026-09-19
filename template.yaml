@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: GST Compliance Copilot - AI compliance assistant for MSMEs
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        FILINGS_TABLE: !Ref FilingsTable
+        ISSUES_TABLE: !Ref FlaggedIssuesTable
+        BUSINESSES_TABLE: !Ref BusinessesTable
+        BEDROCK_MODEL_ID: us.amazon.nova-lite-v1:0
+
+Resources:
+
+  ### API Gateway ###
+  GstApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  ### Lambda: ingest a filing (invoice/filing data upload) ###
+  IngestFilingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: ingestFiling.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FilingsTable
+        - Statement:
+            - Effect: Allow
+              Action: states:StartExecution
+              Resource: !Ref ReviewPipeline
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref ReviewPipeline
+      Events:
+        IngestApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref GstApi
+            Path: /filings
+            Method: post
+
+  ### Lambda: rule-based checks (fast, deterministic) ###
+  RuleCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: ruleCheck.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FilingsTable
+
+  ### Lambda: Bedrock-powered plain-language explanation ###
+  BedrockExplainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: bedrockExplain.handler
+      Timeout: 60
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FlaggedIssuesTable
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: "*"
+
+  ### Lambda: dashboard read API ###
+  GetDashboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: getDashboard.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FilingsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref FlaggedIssuesTable
+      Events:
+        DashboardApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref GstApi
+            Path: /dashboard/{businessId}
+            Method: get
+
+  ### Step Functions: ingest -> rule check -> bedrock explain -> store ###
+  ReviewPipeline:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/review_pipeline.asl.json
+      DefinitionSubstitutions:
+        RuleCheckFunctionArn: !GetAtt RuleCheckFunction.Arn
+        BedrockExplainFunctionArn: !GetAtt BedrockExplainFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RuleCheckFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref BedrockExplainFunction
+
+  ### DynamoDB Tables ###
+  BusinessesTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: business_id
+        Type: String
+
+  FilingsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: filing_id
+        Type: String
+
+  FlaggedIssuesTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: issue_id
+        Type: String
+
+Outputs:
+  ApiUrl:
+    Description: Base URL for the API
+    Value: !Sub "https://${GstApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"

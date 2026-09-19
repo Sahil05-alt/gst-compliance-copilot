@@ -1,0 +1,30 @@
+{
+  "Comment": "GST filing review pipeline: rule check -> Bedrock explain (only if flagged)",
+  "StartAt": "RuleCheck",
+  "States": {
+    "RuleCheck": {
+      "Type": "Task",
+      "Resource": "${RuleCheckFunctionArn}",
+      "Next": "AnyIssuesFound"
+    },
+    "AnyIssuesFound": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.issuesFound",
+          "BooleanEquals": true,
+          "Next": "BedrockExplain"
+        }
+      ],
+      "Default": "NoIssues"
+    },
+    "BedrockExplain": {
+      "Type": "Task",
+      "Resource": "${BedrockExplainFunctionArn}",
+      "End": true
+    },
+    "NoIssues": {
+      "Type": "Succeed"
+    }
+  }
+}

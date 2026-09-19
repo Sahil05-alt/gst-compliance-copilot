@@ -1,0 +1,30 @@
+# AWS SAM
+.aws-sam/
+
+# AWS installers
+aws-sam-cli-linux-x86_64.zip
+awscliv2.zip
+sam-installation/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+aws/
