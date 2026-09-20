@@ -526,3 +526,66 @@ nav {
     animation: none;
   }
 }
+
+/* ============================================
+   ADD THESE TO THE END OF GstDashboard.css
+   (or merge into existing matching selectors)
+   ============================================ */
+
+/* --- 1. Paper grain texture on the main content area --- */
+.main {
+  position: relative;
+}
+.main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: 0;
+}
+.main > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- 2. Smooth hover states --- */
+.nav-item {
+  transition: background 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
+}
+.nav-item:hover {
+  padding-left: 16px; /* subtle nudge on hover, in addition to existing background/color change */
+}
+
+.btn {
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(31, 42, 68, 0.15);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+table tbody tr {
+  transition: background 0.12s ease;
+}
+table tbody tr:hover {
+  background: rgba(166, 53, 43, 0.04); /* faint red-ink tint on hover, matches theme */
+}
+
+.stamp-card {
+  transition: background 0.15s ease;
+}
+.stamp-card:hover {
+  background: rgba(31, 42, 68, 0.02);
+}
+
+/* --- 3. Stat number pop-in (works alongside the JS count-up in GstDashboard.jsx) --- */
+.stat-num {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}

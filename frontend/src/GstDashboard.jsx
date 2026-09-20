@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import "./GstDashboard.css";
+import { useCountUp } from "./useCountUp";
 
 // Falls back to Settings-entered URL if VITE_API_URL isn't set in .env
 const ENV_API_URL = import.meta.env.VITE_API_URL || "";
@@ -152,18 +153,28 @@ export default function GstDashboard() {
     const b = base();
     if (!b) return;
     try {
-      await fetch(`${b}issues/${issue.issue_id}`, {
+      const res = await fetch(`${b}issues/${issue.issue_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolved: true }),
       });
+      if (!res.ok) throw new Error("Resolve request failed");
     } catch {
-      // no PATCH /issues endpoint yet — UI already reflects the intent
+      // Revert the optimistic update if the backend call actually failed
+      setIssues((prev) =>
+        prev.map((i) => (i.issue_id === issue.issue_id ? { ...i, resolved: false } : i))
+      );
     }
   };
 
   const highCount = issues.filter((i) => i.severity === "HIGH").length;
   const mediumCount = issues.filter((i) => i.severity === "MEDIUM").length;
+
+  // Animated stat numbers — count up smoothly instead of snapping instantly
+  const filingsCount = useCountUp(filings.length);
+  const issuesCount = useCountUp(issues.length);
+  const highCountAnim = useCountUp(highCount);
+  const mediumCountAnim = useCountUp(mediumCount);
 
   return (
     <div className="shell">
@@ -213,19 +224,19 @@ export default function GstDashboard() {
 
             <div className="stat-strip">
               <div className="stat">
-                <div className="stat-num">{filings.length}</div>
+                <div className="stat-num">{filingsCount}</div>
                 <div className="stat-label">Filings on record</div>
               </div>
               <div className="stat">
-                <div className="stat-num stat-num--red">{issues.length}</div>
+                <div className="stat-num stat-num--red">{issuesCount}</div>
                 <div className="stat-label">Issues flagged</div>
               </div>
               <div className="stat">
-                <div className="stat-num stat-num--red">{highCount}</div>
+                <div className="stat-num stat-num--red">{highCountAnim}</div>
                 <div className="stat-label">High severity</div>
               </div>
               <div className="stat">
-                <div className="stat-num stat-num--brass">{mediumCount}</div>
+                <div className="stat-num stat-num--brass">{mediumCountAnim}</div>
                 <div className="stat-label">Medium severity</div>
               </div>
             </div>
