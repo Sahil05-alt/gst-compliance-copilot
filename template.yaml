@@ -12,7 +12,7 @@ Globals:
         FILINGS_TABLE: !Ref FilingsTable
         ISSUES_TABLE: !Ref FlaggedIssuesTable
         BUSINESSES_TABLE: !Ref BusinessesTable
-        BEDROCK_MODEL_ID: us.amazon.nova-lite-v1:0
+        BEDROCK_MODEL_ID: us.anthropic.claude-sonnet-4-5-20250929-v1:0
 
 Resources:
 
@@ -22,7 +22,7 @@ Resources:
     Properties:
       StageName: prod
       Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowMethods: "'GET,POST,PATCH,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"
         AllowOrigin: "'*'"
 
@@ -93,6 +93,23 @@ Resources:
             RestApiId: !Ref GstApi
             Path: /dashboard/{businessId}
             Method: get
+
+  ### Lambda: mark a flagged issue resolved ###
+  ResolveIssueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: resolveIssue.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FlaggedIssuesTable
+      Events:
+        ResolveIssueApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref GstApi
+            Path: /issues/{issueId}
+            Method: patch
 
   ### Step Functions: ingest -> rule check -> bedrock explain -> store ###
   ReviewPipeline:
